@@ -2,27 +2,30 @@
 
 # graphql-shield
 
-[![CircleCI](https://circleci.com/gh/maticzav/graphql-shield/tree/master.svg?style=shield)](https://circleci.com/gh/maticzav/graphql-shield/tree/master) [![npm version](https://badge.fury.io/js/graphql-shield.svg)](https://badge.fury.io/js/graphql-shield)
-[![Backers on Open Collective](https://opencollective.com/graphql-shield/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/graphql-shield/sponsors/badge.svg)](#sponsors)
+[![CircleCI](https://circleci.com/gh/maticzav/graphql-shield/tree/master.svg?style=shield)](https://circleci.com/gh/maticzav/graphql-shield/tree/master)
+[![Coverage Status](https://coveralls.io/repos/github/maticzav/graphql-shield/badge.svg?branch=master)](https://coveralls.io/github/maticzav/graphql-shield?branch=master)
+[![npm version](https://badge.fury.io/js/graphql-shield.svg)](https://badge.fury.io/js/graphql-shield)
+[![Backers on Open Collective](https://opencollective.com/graphql-shield/backers/badge.svg)](#backers)[![Sponsors on Open Collective](https://opencollective.com/graphql-shield/sponsors/badge.svg)](#sponsors)
 
 > GraphQL Server permissions as another layer of abstraction!
 
 ## Overview
 
-GraphQL Shield helps you create permission layer for your application. Using intuitive rule-API, you'll gain the power of shield engine on every request and reduce the load time of every request with smart caching. This way you can make sure your application will remain quick, and no internal data will be exposed.
+GraphQL Shield helps you create a permission layer for your application. Using an intuitive rule-API, you'll gain the power of the shield engine on every request and reduce the load time of every request with smart caching. This way you can make sure your application will remain quick, and no internal data will be exposed.
 
 [![Sponsored By GraphCMS](https://github.com/maticzav/graphql-shield/raw/master/media/graphcms.svg?sanitize=true)](https://graphcms.com/?ref=maticzav)
 
 Try building a groceries shop to better understand the benefits of GraphQL Shield! [Banana &Co.](https://medium.com/@maticzavadlal/graphql-shield-9d1e02520e35) 🍏🍌🍓.
 
+Explore common receipts and learn about advanced GraphQL! [GraphQL Shield 3.0](https://medium.com/@maticzavadlal/graphql-shield-9d1e02520e35) ⚔️🛡🐴.
+
 ## Features
 
-* ✂️ **Flexible:** Based on [GraphQL Middleware](https://github.com/prismagraphql/graphql-middleware).
-* 😌 **Easy to use:** Just add permissions to your [Yoga](https://github.com/prismagraphql/graphql-yoga) `middlewares` set, and you are ready to go!
-* 🤝 **Compatible:** Works with all GraphQL Servers.
-* 🚀 **Smart:** Intelligent V8 Shield engine caches all your request to prevent any unnecessary load.
-* 🎯 **Per-Type:** Write permissions for your schema, types or specific fields (check the example below).
-* 💯 **Tested:** Very well [tested](https://github.com/maticzav/graphql-shield/tree/master/test.js) functionalities!
+- ✂️ **Flexible:** Based on [GraphQL Middleware](https://github.com/prismagraphql/graphql-middleware).
+- 😌 **Easy to use:** Just add permissions to your [Yoga](https://github.com/prismagraphql/graphql-yoga) `middlewares` set, and you are ready to go!
+- 🤝 **Compatible:** Works with all GraphQL Servers.
+- 🚀 **Smart:** Intelligent V8 Shield engine caches all your request to prevent any unnecessary load.
+- 🎯 **Per-Type or Per-Field:** Write permissions for your schema, types or specific fields (check the example below).
 
 ## Install
 
@@ -42,7 +45,7 @@ const typeDefs = `
   type Query {
     frontPage: [Fruit!]!
     fruits: [Fruit!]!
-    cusomers: [Customer!]!
+    customers: [Customer!]!
   }
 
   type Mutation {
@@ -62,8 +65,11 @@ const typeDefs = `
 
 const resolvers = {
   Query: {
-    frontPage: () => [{name: "orange", count: 10}, {name: "apple", count: 1}]
-  }
+    frontPage: () => [
+      { name: 'orange', count: 10 },
+      { name: 'apple', count: 1 },
+    ],
+  },
 }
 
 // Auth
@@ -71,19 +77,19 @@ const resolvers = {
 const users = {
   mathew: {
     id: 1,
-    name: "Mathew",
-    role: "admin"
+    name: 'Mathew',
+    role: 'admin',
   },
   george: {
     id: 2,
-    name: "George",
-    role: "editor"
+    name: 'George',
+    role: 'editor',
   },
   johnny: {
     id: 3,
-    name: "Johnny",
-    role: "customer"
-  }
+    name: 'Johnny',
+    role: 'customer',
+  },
 }
 
 function getUser(req) {
@@ -109,36 +115,35 @@ const isEditor = rule()(async (parent, args, ctx, info) => {
   return ctx.user.role === 'editor'
 })
 
-
 // Permissions
 
 const permissions = shield({
   Query: {
     frontPage: not(isAuthenticated),
     fruits: and(isAuthenticated, or(isAdmin, isEditor)),
-    customers: and(isAuthenticated, isAdmin)
+    customers: and(isAuthenticated, isAdmin),
   },
   Mutation: {
     addFruitToBasket: isAuthenticated,
   },
   Fruit: isAuthenticated,
-  Cusomer: isAdmin
+  Customer: isAdmin,
 })
 
-const server = GraphQLServer({
+const server = new GraphQLServer({
   typeDefs,
   resolvers,
   middlewares: [permissions],
   context: req => ({
     ...req,
-    user: getUser(req)
-  })
+    user: getUser(req),
+  }),
 })
 
 server.start(() => console.log('Server is running on http://localhost:4000'))
 ```
 
-### Others
+### Others, using `graphql-middleware`
 
 ```ts
 // Permissions...
@@ -146,9 +151,9 @@ server.start(() => console.log('Server is running on http://localhost:4000'))
 // Apply permissions middleware with applyMiddleware
 // Giving any schema (instance of GraphQLSchema)
 
-import { applyMiddleware } from 'graphql-middleware';
+import { applyMiddleware } from 'graphql-middleware'
 // schema definition...
-schema = applyMiddleware(schema, permissions);
+schema = applyMiddleware(schema, permissions)
 ```
 
 ## API
@@ -157,29 +162,32 @@ schema = applyMiddleware(schema, permissions);
 
 ```ts
 // Rule
-function rule(name?: string, options?: IRuleOptions)(func: IRuleFunction): Rule
+function rule(name?: string, options?: IRuleOptions): (func: IRuleFunction) => Rule
 
-type IRuleFunction = (
-  parent: any,
-  args: any,
-  context: any,
-  info: GraphQLResolveInfo,
-) => Promise<boolean>
+export type IFragment = string
+export type ICacheOptions = 'strict' | 'contextual' | 'no_cache' | boolean
+export type IRuleResult = boolean | Error
 
-export interface IRuleOptions {
-  cache?: boolean
+export type IRuleFunction = (
+  parent?: any,
+  args?: any,
+  context?: any,
+  info?: GraphQLResolveInfo,
+) => IRuleResult | Promise<IRuleResult>
+
+interface IRuleOptions {
+  cache?: ICacheOptions
+  fragment?: IFragment
 }
 
 // Logic
 function and(...rules: IRule[]): LogicRule
 function or(...rules: IRule[]): LogicRule
 function not(rule: IRule): LogicRule
+const allow: LogicRule
+const deny: LogicRule
 
-// Predefined rules
-const allow: Rule
-const deny: Rule
-
-type IRule = Rule | LogicRule
+export type ShieldRule = IRule | ILogicRule
 
 interface IRuleFieldMap {
   [key: string]: IRule
@@ -189,13 +197,16 @@ interface IRuleTypeMap {
   [key: string]: IRule | IRuleFieldMap
 }
 
-type IRules = IRule | IRuleTypeMap
+export type IRules = ShieldRule | IRuleTypeMap
 
 function shield(rules?: IRules, options?: IOptions): IMiddleware
 
 export interface IOptions {
   debug?: boolean
   allowExternalErrors?: boolean
+  whitelist?: boolean
+  graphiql?: boolean
+  fallback?: string | Error
 }
 ```
 
@@ -205,31 +216,111 @@ export interface IOptions {
 
 #### `rules`
 
-A rule map must match your schema definition. All rules must be created using `rule` function to ensure caches are made correctly. You can apply your `rule` accross entire schema, Type scoped, or field specific.
+A rule map must match your schema definition. All rules must be created using the `rule` function to ensure caches are made correctly. You can apply your `rule` accross entire schema, Type scoped, or field specific.
 
 ##### Limitations
 
-* All rules must have a distinct name. Usually, you won't have to care about this as all names are by default automatically generated to prevent such problems. In case your function needs additional variables from other parts of the code and is defined as a function, you'll set a specific name to your rule to avoid name generation.
+- All rules must have a distinct name. Usually, you won't have to care about this as all names are by default automatically generated to prevent such problems. In case your function needs additional variables from other parts of the code and is defined as a function, you'll set a specific name to your rule to avoid name generation.
 
 ```jsx
 // Normal
-const admin = rule({ cache: true })(async (parent, args, ctx, info) => true)
+const admin = rule({ cache: 'contextual' })(
+  async (parent, args, ctx, info) => true,
+)
 
 // With external data
 const admin = bool =>
-  rule(`name`, { cache: true })(async (parent, args, ctx, info) => bool)
+  rule(`name-${bool}`, { cache: 'contextual' })(
+    async (parent, args, ctx, info) => bool,
+  )
 ```
 
-* Cache is enabled by default accross all rules. To prevent `cache` generation, set `{ cache: false }` when generating a rule.
-* By default, no rule is executed more than once in complete query execution. This accounts for significantly better load times and quick responses.
+- Cache is enabled by default accross all rules. To prevent `cache` generation, set `{ cache: 'no_cache' }` or `{ cache: false }` when generating a rule.
+- By default, no rule is executed more than once in complete query execution. This accounts for significantly better load times and quick responses.
+
+##### Cache
+
+You can choose from three different cache options.
+
+1.  `no_cache` - prevents rules from being cached.
+1.  `contextual` - use when rule only relies on `ctx` parameter.
+1.  `strict` - use when rule relies on `parent` or `args` parameter as well.
+
+```ts
+// Contextual
+const admin = rule({ cache: 'contextual' })(async (parent, args, ctx, info) => {
+  return ctx.user.isAdmin
+})
+
+// Strict
+const admin = rule({ cache: 'strict' })(async (parent, args, ctx, info) => {
+  return ctx.user.isAdmin || args.code === 'secret' || parent.id === 'theone'
+})
+```
+
+> Backward compatibility: `{ cache: false }` converts to `no_cache`, and `{ cache: true }` converts to `strict`.
+
+##### Custom Errors
+
+Shield, by default, catches all errors thrown during resolver execution. This way we can be 100% sure none of your internal logic can be exposed to the client if it was not meant to be.
+
+To return custom error messages to your client, you can return error instead of throwing it. This way, Shield knows it's not a bug but rather a design decision under control. 
+
+You can return custom error from resolver or from rule itself. Rules that return error are treated as failing, therefore not processing any further resolvers.
+
+```tsx
+const typeDefs = `
+  type Query {
+    customErrorInResolver: String
+    customErrorInRule: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    customErrorInResolver: () => {
+      return new Error('Custom error message from resolver.')
+    },
+    customErrorInRule: () => {
+      // Querying is stopped because rule returns an error
+      console.log("This won't be logged.")
+      return "you won't see me!"
+    }
+  },
+}
+
+const ruleWithCustomError = rule()(async (parent, args, ctx, info) => {
+  return new Error('Custom error message from rule.')
+})
+
+const permissions = shield({
+  Query: {
+    customErrorInRule: ruleWithCustomError
+  }
+})
+
+const server = GraphQLServer({
+  typeDefs,
+  resolvers,
+  middlewares: [permissions],
+})
+```
+
+> Errors thrown in resolvers can be tracked using `debug` option. This way Shield ensures your code is production ready at all times.
+
+> If you wish to see errors thrown inside resolvers, you can set `allowExternalErrors` option to `true`. This way, Shield won't hide custom errors thrown during query resolving.
 
 #### `options`
 
-| Property            | Required | Default | Description                                 |
-| ------------------- | -------- | ------- | ------------------------------------------- |
-| allowExternalErrors | false    | true    | Toggles catching internal resolvers errors. |
+| Property            | Required | Default                 | Description                                                 |
+| ------------------- | -------- | ----------------------- | ----------------------------------------------------------- |
+| allowExternalErrors | false    | false                   | Toggle catching internal errors.                            |
+| debug               | false    | false                   | Toggle debug mode.                                          |
+| whitelist           | false    | false                   | Whitelist rules instead of blacklisting them.               |
+| graphiql            | false    | false                   | Allow introspection query regardless of `whitelist` option. |
+| fallback            | false    | Error('Not Authorised') | Error Permission system fallbacks to.                       |
 
-By default `shield` ensures no internal data is exposed to client if it was not meant to be. Therefore, all thrown errors during execution resolve in `Not Authenticated!` error message if not otherwise specified using `CustomError`. This can be turned off by setting `allowExternalErrors` option to true.
+By default `shield` ensures no internal data is exposed to client if it was not meant to be. Therefore, all thrown errors during execution resolve in `Not Authenticated!` error message if not otherwise specified using `error` wrapper. This can be turned off by setting `allowExternalErrors` option to true.
 
 ### `allow`, `deny`
 
@@ -240,8 +331,6 @@ By default `shield` ensures no internal data is exposed to client if it was not 
 ### `and`, `or`, `not`
 
 > `and`, `or` and `not` allow you to nest rules in logic operations.
-
-* Nested rules fail by default if error is thrown.
 
 #### And Rule
 
@@ -272,48 +361,157 @@ const isOwner = rule()(async (parent, args, ctx, info) => {
 
 const permissions = shield({
   Query: {
-    users: or(isAdmin, isEditor)
+    users: or(isAdmin, isEditor),
   },
   Mutation: {
-    createBlogPost: or(isAdmin, and(isOwner, isEditor))
+    createBlogPost: or(isAdmin, and(isOwner, isEditor)),
   },
   User: {
-    secret: isOwner
+    secret: isOwner,
   },
 })
 ```
 
-### `Custom Errors`
+### `Global Fallback`
 
-Shield, by default, catches all errors thrown during resolver execution. This way we can be 100% sure none of your internal logic will be exposed to the client if it was not meant to be.
+GraphQL Shield allows you to set a globally defined fallback that is used instead of `Not Authorised!` default response. This might be particularly useful for localisation. You can use `string` or even custom `Error` to define it.
 
-Nevertheless, you can use `CustomError` error types to report your custom error messages to your users.
+```ts
+const permissions = shield(
+  {
+    Query: {
+      items: allow,
+    },
+  },
+  {
+    fallback: 'To je napaka!', // meaning "This is a mistake" in Slovene.
+  },
+)
 
-```tsx
-import { CustomError } from 'graphql-shield'
+const permissions = shield(
+  {
+    Query: {
+      items: allow,
+    },
+  },
+  {
+    fallback: new CustomError('You are something special!'),
+  },
+)
+```
 
+### `Fragments`
+
+Fragments allow you to define which fields your rule requires to work correctly. This comes in extremely handy when your rules rely on data from database. You can use fragments to define which data your rule relies on.
+
+```ts
+const isItemOwner = rule({
+  cache: 'strict',
+  fragment: 'fragment ItemID on Item { id }',
+})(async ({ id }, args, ctx, info) => {
+  return ctx.db.exists.Item({
+    id,
+    owner: { id: ctx.user.id },
+  })
+})
+
+const permissions = shield(
+  {
+    Query: {
+      items: allow,
+    },
+    Item: {
+      id: allow,
+      name: allow,
+      secret: isItemOwner,
+    },
+  },
+  {
+    whitelist: true,
+  },
+)
+
+// GraphQL Yoga
+
+const server = new GraphQLServer({
+  typeDefs: './src/schema.graphql',
+  resolvers,
+  middlewares: [permissions],
+  context: ({
+    request,
+    response,
+    fragmentReplacements: middlewareFragmentReplacements,
+  }) => {
+    return {
+      request,
+      response,
+      db: new Prisma({
+        fragmentReplacements: [
+          ...middlewareFragmentReplacements,
+          ...resolverFragmentReplacements,
+        ],
+        endpoint: process.env.PRISMA_ENDPOINT,
+        secret: process.env.PRISMA_SECRET,
+        debug: true,
+      }),
+    }
+  },
+})
+
+// GraphQL Middleware
+
+const { schema, fragmentReplacements } = applyMiddleware(schema, permissions)
+```
+
+### `Whitelisting vs Blacklisting`
+
+Shield allows you to lock-in your schema. This way, you can seamleslly develop and publish your work without worrying about exposing your data. To lock in your service simply set `whitelist` to `true` like this;
+
+```ts
 const typeDefs = `
   type Query {
-    customError: String!
+    users: [User!]!
+    newFeatures: FeaturesConnection!
+  }
+
+  type User {
+    id: ID!
+    name: String!
+    author: Author!
+  }
+
+  type Author {
+    id: ID!
+    name: String!
+    secret: String
   }
 `
 
-const resolvers = {
+const permissions = shield({
   Query: {
-    customError: () => {
-      throw new CustomError('customErrorResolver')
-    },
-  }
-}
-
-const permissions = shield()
-
-const server = GraphQLServer({
-  typeDefs,
-  resolvers,
-  middlewares: [permissions]
+    users: allow,
+  },
+  User: allow,
+  Author: {
+    id: allow,
+    name: allow,
+  },
 })
 ```
+
+> You can achieve same functionality by setting every "rule-undefined" field to `deny` the request.
+
+## Troubleshooting
+
+#### When a single field is "Not Authorized!" the entire parent object returns null.
+
+This occurs when a non-nullable field (specified in the schema) returns a null value (due to GraphQL Shield blocking the field's value). GraphQL is a strongly typed language - the schema serves as a contract between client and server - which requires that the server response follow the schema definition.
+
+See [#126](https://github.com/maticzav/graphql-shield/issues/126#issuecomment-416524581) and [#97](https://github.com/maticzav/graphql-shield/issues/97#issuecomment-404867307) for more detailed explanations.
+
+#### A rule is excuted only once even though the dataset contains multiple values (and thus should execute the rule multiple times)
+
+This occurs because of caching. When the cache is set to "contextual" only the contextual variable of the rule is expected to be evaluated. Setting the cache to "strict" allows the rule to rely on parent and args parameters as well.
 
 ## Contributors
 
